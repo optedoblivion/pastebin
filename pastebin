@@ -1,0 +1,225 @@
+#!/usr/bin/env python
+
+from optparse import OptionParser
+import sys
+if sys.version_info < (3,0):
+    from httplib import HTTPConnection
+    from urllib import urlencode
+else:
+    from urllib.parse import urlencode
+    from http.client import HTTPConnection
+
+headers = {
+    'Host':'pastebin.com',
+    'User-Agent':'Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.11) Gecko/20101019 Firefox/3.6.11',
+    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+    'Accept': 'text/html, */*',
+    'Accept-Language': 'en-us,e;q=0.5',
+    'Accept-Encoding': 'deflate',
+}
+
+FORMATS = """
+abap = ABAP
+actionscript = ActionScript
+actionscript3 = ActionScript 3
+ada = Ada
+apache = Apache Log
+applescript = AppleScript
+apt_sources = APT Sources
+asm = ASM (NASM)
+asp = ASP
+autoit = AutoIt
+avisynth = Avisynth
+bash = Bash
+basic4gl = Basic4GL
+bibtex = BibTeX
+blitzbasic = Blitz Basic
+bnf = BNF
+boo = BOO
+bf = BrainFuck
+c = C
+c_mac = C for Macs
+cill = C Intermediate Language
+csharp = C#
+cpp = C++
+caddcl = CAD DCL
+cadlisp = CAD Lisp
+cfdg = CFDG
+klonec = Clone C
+klonecpp = Clone C++
+cmake = CMake
+cobol = COBOL
+cfm = ColdFusion
+css = CSS
+d = D
+dcs = DCS
+delphi = Delphi
+dff = Diff
+div = DIV
+dos = DOS
+dot = DOT
+eiffel = Eiffel
+email = Email
+erlang = Erlang
+fo = FO Language
+fortran = Fortran
+freebasic = FreeBasic
+gml = Game Maker
+genero = Genero
+gettext = GetText
+groovy = Groovy
+haskell = Haskell
+hq9plus = HQ9 Plus
+html4strict = HTML
+idl = IDL
+ini = INI file
+inno = Inno Script
+intercal = INTERCAL
+io = IO
+java = Java
+java5 = Java 5
+javascript = JavaScript
+kixtart = KiXtart
+latex = Latex
+lsl2 = Linden Scripting
+lisp = Lisp
+locobasic = Loco Basic
+lolcode = LOL Code
+lotusformulas = Lotus Formulas
+lotusscript = Lotus Script
+lscript = LScript
+lua = Lua
+m68k = M68000 Assembler
+make = Make
+matlab = MatLab
+matlab = MatLab
+mirc = mIRC
+modula3 = Modula 3
+mpasm = MPASM
+mxml = MXML
+mysql = MySQL
+text = None
+nsis = NullSoft Installer
+oberon2 = Oberon 2
+objc = Objective C
+ocaml-brief = OCalm Brief
+ocaml = OCaml
+glsl = OpenGL Shading
+oobas = Openoffice BASIC
+oracle11 = Oracle 11
+oracle8 = Oracle 8
+pascal = Pascal
+pawn = PAWN
+per = Per
+perl = Perl
+php = PHP
+php-brief = PHP Brief
+pic16 = Pic 16
+pixelbender = Pixel Bender
+plsql = PL/SQL
+povray = POV-Ray
+powershell = Power Shell
+progress = Progress
+prolog = Prolog
+properties = Properties
+providex = ProvideX
+python = Python
+qbasic = QBasic
+rails = Rails
+rebol = REBOL
+reg = REG
+robots = Robots
+ruby = Ruby
+gnuplot = Ruby Gnuplot
+sas = SAS
+scala = Scala
+scheme = Scheme
+scilab = Scilab
+sdlbasic = SdlBasic
+smalltalk = Smalltalk
+smarty = Smarty
+sql = SQL
+tsql = T-SQL
+tcl = TCL
+tcl = TCL
+teraterm = Tera Term
+thinbasic = thinBasic
+typoscript = TypoScript
+unreal = unrealScript
+vbnet = VB.NET
+verilog = VeriLog
+vhdl = VHDL
+vim = VIM
+visualprolog = Visual Pro Log
+vb = VisualBasic
+visualfoxpro = VisualFoxPro
+whitespace = WhiteSpace
+whois = WHOIS
+winbatch = Win Batch
+xml = XML
+xorg_conf = Xorg Config
+xpp = XPP
+z80 = Z80 Assembler
+"""
+
+
+baseUrl = "pastebin.com:80"
+path = "/api_public.php"
+
+def post(paste_code, **kwargs):
+    params = {}
+    params["paste_code"] = paste_code
+    for key,val in kwargs.items():
+        params[key] = val
+    params = urlencode(params)
+    conn = HTTPConnection(baseUrl)
+    conn.request("POST", path, params, headers)
+    response = conn.getresponse()
+    return response
+
+
+if __name__ == "__main__":
+
+    usage = "Usage: %prog [options]"
+
+    parser = OptionParser(usage)
+    parser.add_option("-p", dest="paste_private", action="store_const", const="1", help="Private post flag.")
+    parser.add_option("-n", dest="paste_name", help="For adding a title or name to your paste.")
+    parser.add_option("-e", dest="paste_email", help="For sending confirmation email with paste link.")
+    parser.add_option("-s", dest="paste_subdomain", help="For using a certain subdomain.")
+    parser.add_option("-x", dest="paste_expire_date", help="For adding expiration date. N = Never, 10M = 10 Minutes, 1H = 1 Hour, 1D = 1 Day, 1M = 1 Month.")
+    parser.add_option("-f", dest="paste_format", help="For adding syntax highlighting. To list possible entries, use --list-formats.")
+    parser.add_option("--list-formats", dest="list_formats", action="store_const", const="1", help="List possible code formats.")
+
+    options, args = parser.parse_args()
+
+    if options.list_formats:
+        print(FORMATS)
+        sys.exit(0)
+    
+    params = {}
+    badOpts = ["read_file", "read_module", "ensure_value"]
+    for opt in dir(options):
+        if not opt.startswith("_") and opt not in badOpts:
+            attr = getattr(options, opt)
+            if attr:
+                params[opt] = attr
+
+    paste_code = ""
+    try:
+        for line in sys.stdin:
+            paste_code += line
+    except KeyboardInterrupt:
+        ## We want to pass silently here so we can post
+        ## the data captured (e.g. adb lolcat | pastebin)
+        pass
+    
+    response = post(paste_code, **params)
+    
+    if response.status == 200:
+        print(response.read().decode("utf-8"))
+    else:
+        err = "Error %s: %s" % (response.status, response.reason.decode("utf-8"))
+        print(err)
+
+

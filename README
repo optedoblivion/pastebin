@@ -1,0 +1,18 @@
+Pastebin command line tool.
+
+Example Usage:
+
+adb lolcat | pastebin -p -x 10M -n optedoblivion
+
+or
+
+cat MyCode.py | pastebin -n optedoblivion -f python
+
+INSTALL:
+
+1. chmod +x pastebin
+2. place in your path
+
+
+
+
