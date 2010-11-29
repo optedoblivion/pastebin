@@ -219,7 +219,7 @@ if __name__ == "__main__":
     if response.status == 200:
         print(response.read().decode("utf-8"))
     else:
-        err = "Error %s: %s" % (response.status, response.reason.decode("utf-8"))
+        err = "Error %s: %s" % (response.status, response.reason)
         print(err)
 
 
